@@ -1,6 +1,7 @@
 # Explainable Glaucoma Stage Classification
 
 Classify glaucoma severity from retinal fundus images, then apply XAI (Explainable AI) methods to visualize and explain which regions drive the model's predictions.
+[Report](https://www.overleaf.com/7782515589vfbbncshxcbh#3e6d5a)
 
 ## 1. Project overview
 
