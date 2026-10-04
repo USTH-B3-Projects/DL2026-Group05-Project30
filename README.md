@@ -17,8 +17,8 @@ Classify glaucoma severity from retinal fundus images, then apply XAI (Explainab
 | Member | Model | Notes |
 |---|---|---|
 | Quang & Mai Anh | ResNet50 | Transfer learning, fine-tuning |
-| Nhật & Việt | DenseNet121 | Transfer learning, fine-tuning |
-| An & Ngân Anh | CNN from scratch | Custom architecture |
+| Nhat & Viet | DenseNet121 | Transfer learning, fine-tuning |
+| An & Ngan Anh | CNN from scratch | Custom architecture |
 
 > Once the 3 models are trained and compared, the team will meet again to finalize the **3 XAI methods** and assign pairs to each one (2 people per method). This section will be updated once that's decided.
 
@@ -27,15 +27,16 @@ Classify glaucoma severity from retinal fundus images, then apply XAI (Explainab
 ```
 .
 ├── data/                       # Raw data is NOT committed to git (see .gitignore)
-│   ├── raw/                    # Original dataset downloaded from Hugging Face
-│   └── processed/              # Preprocessed data (if any)
+│   ├── raw/                        # Original dataset downloaded manually from Hugging Face
+│   └── processed/                  # Preprocessed data (if any)
+│.  └── demo_samples/           # Sample images for live demos - IS committed to git
 │
-├── notebooks/                  # Notebooks run on Colab/Kaggle, kept for reference/reproducibility
-│   ├── 01_data_exploration.ipynb
-│   ├── 02_train_cnn_scratch.ipynb
-│   ├── 03_train_densenet121.ipynb
-│   ├── 04_train_resnet50.ipynb
-│   └── 05_xai_analysis.ipynb
+├── notebooks/                  # Notebooks run on Colab/Kaggle/Jupyter, kept for reference/reproducibility
+│   ├── data_exploration.ipynb
+│   ├── train_cnn_scratch.ipynb
+│   ├── train_densenet121.ipynb
+│   ├── train_resnet50.ipynb
+│   └── xai_analysis.ipynb
 │
 ├── src/                        # Main source code, imported into notebooks
 │   ├── datasets/
@@ -68,7 +69,31 @@ Classify glaucoma severity from retinal fundus images, then apply XAI (Explainab
 └── README.md
 ```
 
-## 4. Libraries used
+## 4. What each file in `src/` does
+ 
+| File | Role |
+|---|---|
+| `src/training/config.py` | Shared paths, hyperparameters (batch size, learning rate, epochs, image size) and random seed. Everyone imports from here instead of hardcoding these values, so all 3 models are trained under the same settings. |
+| `src/datasets/glaucoma_dataset.py` | Downloads the dataset from Hugging Face, defines image transforms (resize, normalize, augmentation), and exposes `build_dataloaders()` — returns train/val/test `DataLoader`s. Used identically by all 3 pairs so the data pipeline is never a source of unfair comparison. |
+| `src/models/cnn_scratch.py`, `densenet121.py`, `resnet50.py` | Each defines **one model's architecture** — the thing each pair actually edits. `cnn_scratch.py` is a custom architecture built from `nn.Conv2d`/`nn.Linear`; the other two wrap pretrained `torchvision.models` and replace the final layer for fine-tuning. |
+| `src/training/train_loop.py` | **Does not define or create a model** — it receives an already-built model as an argument and runs the training process on it (`train_one_epoch`, `evaluate`, `fit`). The same training procedure (same order of `zero_grad`/`backward`/`step`, same loss handling) is reused for all 3 models, called separately in each pair's own notebook. |
+| `src/utils/metrics.py` | Runs **after** training/evaluation. Takes the predictions + true labels that `evaluate()` produced and turns them into accuracy, F1, and a confusion matrix, then saves them to `results/metrics/<model_name>.json` so the 3 models can be compared side by side. |
+| `src/utils/visualize.py` | Plotting helpers: training-curve plots (train/val loss per epoch from `fit()`'s `history`), confusion-matrix heatmaps, and later, XAI heatmaps overlaid on the original image once the 3 XAI methods are chosen. |
+| `src/xai/*.py` | Placeholder files, to be renamed/filled once the 3 XAI methods are finalized (e.g. `grad_cam.py`). |
+ 
+**How they connect**, in the order a notebook actually calls them:
+ 
+```
+config.py             →  shared settings used by everything below
+glaucoma_dataset.py   →  build_dataloaders() → train_loader, val_loader, test_loader
+models/<model>.py     →  build_<model>()      → model
+train_loop.py         →  fit(model, train_loader, val_loader, ...) → trains the model
+                      →  evaluate(model, test_loader, ...)         → preds, labels
+metrics.py            →  compute_metrics(labels, preds) → save_metrics(...)
+visualize.py          →  plots from history / metrics
+```
+
+## 5. Libraries used
 
 **Modeling / training:**
 - `torch`, `torchvision` — model definitions, DataLoaders, training loop
@@ -100,7 +125,7 @@ captum
 
 > `requirements.txt` will be updated with the exact versions actually used for training.
 
-## 5. How to run
+## 6. How to run
 
 1. Clone the repo:
    ```bash
@@ -111,16 +136,25 @@ captum
    ```bash
    pip install -r requirements.txt
    ```
-3. Download the dataset (run inside `notebooks/01_data_exploration.ipynb` or a dedicated script in `src/datasets/`):
+3. Download the dataset (run inside `notebooks/data_exploration.ipynb` or a dedicated script in `src/datasets/`):
    ```python
    from datasets import load_dataset
    ds = load_dataset("moondream/glaucoma-detection")
    ```
-4. Train a model: open the corresponding notebook (`02_train_cnn_scratch.ipynb`, `03_train_densenet121.ipynb`, `04_train_resnet50.ipynb`) on Colab/Kaggle, import modules from `src/` (mount/clone the repo inside the notebook), and run the training loop.
+4. Train a model: open the corresponding notebook (`train_cnn_scratch.ipynb`, `train_densenet121.ipynb`, `train_resnet50.ipynb`) on Colab/Kaggle, import modules from `src/` (mount/clone the repo inside the notebook), and run the training loop.
 5. Save checkpoints to `checkpoints/` and results/metrics to `results/`.
 6. Once the best model is selected, run `05_xai_analysis.ipynb` to apply the 3 XAI methods and save the heatmaps to `results/figures/`.
 
-## 6. Collaboration conventions
+## 7. Demo for the presentation
+ 
+For the live demo in front of the lecturer, do **not** rely on `data/raw/` or on downloading the dataset on the spot — classroom Wi-Fi can be unreliable, and `data/raw/` is empty right after a fresh `git clone` (it's git-ignored).
+ 
+Instead:
+- Put 5–10 representative fundus images in `data/demo_samples/`. Unlike `data/raw/`, this folder **is** committed to git, so it's immediately available after cloning, on any machine.
+- Point the demo script/notebook at `data/demo_samples/` instead of the full dataset when showing predictions + XAI heatmaps live.
+- Test the demo once on a freshly cloned copy of the repo beforehand, to confirm it runs without needing the full dataset or an internet connection.
+
+## 8. Collaboration conventions
 
 - Everyone works on their own branch (`feature/resnet50`, `feature/densenet121`, `feature/cnn-scratch`, `feature/xai-<method>`, ...) and merges into `main` via Pull Request.
 - Do not commit the raw dataset, model checkpoints (.pt/.pth), or other large files directly — add them to `.gitignore` and share via Drive/Kaggle Dataset if needed.
