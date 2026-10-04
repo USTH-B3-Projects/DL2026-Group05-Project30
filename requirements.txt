@@ -1,5 +1,5 @@
-torch
-torchvision
+torch>=2.0.0
+torchvision>=0.15.0
 datasets
 scikit-learn
 matplotlib
@@ -7,5 +7,5 @@ seaborn
 pandas
 pillow
 tqdm
-pytorch-grad-cam
+grad-cam
 captum
