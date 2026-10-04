@@ -1,0 +1,19 @@
+[project]
+name = "explainable-glaucoma-stage-classification"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "captum>=0.9.0",
+    "datasets>=5.0.1",
+    "grad-cam>=1.5.7",
+    "matplotlib>=3.11.2",
+    "pandas>=3.0.6",
+    "pillow>=12.3.0",
+    "scikit-learn>=1.9.1",
+    "seaborn>=0.13.2",
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "tqdm>=4.70.1",
+]

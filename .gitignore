@@ -1,26 +1,42 @@
+# Data directories
 data/raw/
 data/processed/
 
+# Model checkpoints
 checkpoints/
 *.pt
 *.pth
 
+# Results
 results/figures/*.png
 results/figures/*.jpg
 
+# Jupyter
 .ipynb_checkpoints/
 
+# Python
 __pycache__/
 *.pyc
 *.pyo
+
+# Virtual environments
 .venv/
+.uv/
 venv/
 env/
 
+# Environment variables
 .env
 *.token
 
+# OS
 .DS_Store
 Thumbs.db
+
+# IDEs
 .vscode/
 .idea/
+
+# AI agent configuration (personal use)
+AGENTS.md
+docs/agents/
