@@ -1,5 +1,6 @@
 from torch.utils.data import Dataset, DataLoader    
 from torchvision import transforms
+from datasets import load_dataset
 
 from PIL import Image
 from io import BytesIO
@@ -9,19 +10,19 @@ LABEL_MAP = {
     "early": 1,
     "advanced": 2
 }
+IDX_TO_CLASS = {v: k for k, v in LABEL_MAP.items()}
 
 train_transform = transforms.Compose([
     transforms.Resize((224, 224)), 
 
     #Data augmentation
     transforms.RandomHorizontalFlip(p=0.5),
-    transforms.RandomRotation(degreees=10),
+    transforms.RandomRotation(degrees=10),
     transforms.ColorJitter(
         brightness=0.1,
         contrast=0.1,
         saturation=0.05
     ),
-
     transforms.ToTensor(),
     transforms.Normalize(
         mean=[0.485, 0.456, 0.406],
@@ -65,7 +66,8 @@ def create_datasets(ds):
 
     return train_data, val_data, test_data
 
-def create_dataloaders(ds, batch_size=32):
+def build_dataloaders(batch_size: int=32):
+    ds = load_dataset("moondream/glaucoma-detection")
     train_data, val_data, test_data = create_datasets(ds)
 
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
