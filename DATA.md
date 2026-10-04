@@ -41,6 +41,7 @@ Applied identically to all 3 models (CNN from scratch, DenseNet121, ResNet50), i
 4. **Train split only — augmentation:**
    - Random horizontal flip.
    - Random rotation (±10°).
+   - Color jitter (brightness ±0.1, contrast ±0.1, saturation ±0.05).
 5. **Normalization** (all splits): per-channel mean/std from ImageNet statistics —
    `mean = [0.485, 0.456, 0.406]`, `std = [0.229, 0.224, 0.225]`.
 6. Convert to PyTorch tensors (`transforms.ToTensor()`), batched via `torch.utils.data.DataLoader`.
