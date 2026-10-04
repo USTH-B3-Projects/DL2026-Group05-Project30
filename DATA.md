@@ -1,3 +1,5 @@
+# Dataset
+
 ## 1. Official dataset URL
 
 - **Source:** [moondream/glaucoma-detection](https://huggingface.co/datasets/moondream/glaucoma-detection) — Hugging Face Datasets Hub.
@@ -6,7 +8,7 @@
 
 ## 2. Dataset version
 
-- Version used: the dataset revision available on the Hugging Face Hub as of **2026-10-03** (the date the team finalized this dataset choice).
+- Version used: the dataset revision available on the Hugging Face Hub, verified directly by loading it on **2026-10-04**.
 - No separate versioned release/tag is published by the dataset authors; `datasets.load_dataset()` pins to the current main revision on the Hub unless a `revision=` commit hash is passed. The exact commit hash used for the experiments will be recorded here once training starts, by running:
   ```python
   from datasets import load_dataset
@@ -16,28 +18,32 @@
 
 ## 3. Data split
 
-The dataset is pre-split by the authors into 3 subsets, used as-is (no re-splitting performed):
+The dataset is pre-split by the authors into 3 subsets, used as-is (no re-splitting performed). Confirmed directly from `load_dataset("moondream/glaucoma-detection")` on 2026-10-04:
 
 | Split | Images |
 |---|---|
-| Train | 2,850 |
-| Validation | 1,260 |
-| Test | 1,270 |
-| **Total** | **5,380** |
+| Train | 2,847 |
+| Validation | 1,259 |
+| Test | 1,272 |
+| **Total** | **5,378** |
 
-Image resolution as distributed: 416×416 pixels.
+- **Features:** `image` (JPEG bytes, `decode=False` — must be decoded manually, see Section 4), `class` (string).
+- **Classes (3):** `"normal"`, `"early"`, `"advanced"` — glaucoma severity, mapped to integer indices `0, 1, 2` respectively (see `CLASS_TO_IDX` in `src/datasets/glaucoma_dataset.py`). All 3 models must use this exact mapping so a given index means the same severity everywhere.
+- Per-class image counts have not been tallied yet; add them here once computed (e.g. `Counter(ds["train"]["class"])`) — useful for the report, in case the classes are imbalanced.
 
 ## 4. Preprocessing procedure
 
 Applied identically to all 3 models (CNN from scratch, DenseNet121, ResNet50), implemented in `src/datasets/glaucoma_dataset.py`:
 
-1. **Resize** every image to 224×224 (matches the input size expected by ImageNet-pretrained DenseNet121/ResNet50; the from-scratch CNN uses the same size for a fair comparison).
-2. **Train split only — augmentation:**
+1. **Decode the image.** The `image` column is stored with `decode=False`, i.e. each sample's `image` is a dict holding raw JPEG bytes (`{"bytes": ..., "path": None}`), not an auto-decoded image. It is opened manually with `PIL.Image.open(io.BytesIO(sample["image"]["bytes"])).convert("RGB")`.
+2. **Map the label.** The `class` column holds strings (`"normal"`/`"early"`/`"advanced"`), not integers. Mapped to `0`/`1`/`2` via `CLASS_TO_IDX` before being used in `nn.CrossEntropyLoss`.
+3. **Resize** every image to 224×224 (matches the input size expected by ImageNet-pretrained DenseNet121/ResNet50; the from-scratch CNN uses the same size for a fair comparison).
+4. **Train split only — augmentation:**
    - Random horizontal flip.
    - Random rotation (±10°).
-3. **Normalization** (all splits): per-channel mean/std from ImageNet statistics —
+5. **Normalization** (all splits): per-channel mean/std from ImageNet statistics —
    `mean = [0.485, 0.456, 0.406]`, `std = [0.229, 0.224, 0.225]`.
-4. Convert to PyTorch tensors (`transforms.ToTensor()`), batched via `torch.utils.data.DataLoader`.
+6. Convert to PyTorch tensors (`transforms.ToTensor()`), batched via `torch.utils.data.DataLoader`.
 
 No manual relabeling, filtering, or class rebalancing is applied — the dataset's original labels and splits are used directly.
 
