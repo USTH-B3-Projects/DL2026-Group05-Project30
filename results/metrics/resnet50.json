@@ -1,0 +1,20 @@
+{
+  "model": "resnet50",
+  "class_mapping": {
+    "0": "normal",
+    "1": "early",
+    "2": "advanced"
+  },
+  "batch_size": 16,
+  "epochs_completed": 13,
+  "learning_rate": 0.0001,
+  "weight_decay": 0.0001,
+  "metrics": {
+    "loss": 0.2976202492736889,
+    "accuracy": 0.8915094339622641,
+    "balanced_accuracy": 0.8723897182895474,
+    "macro_precision": 0.8791712519305338,
+    "macro_recall": 0.8723897182895474,
+    "macro_f1": 0.8754281469126738
+  }
+}

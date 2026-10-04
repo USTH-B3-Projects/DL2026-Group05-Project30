@@ -1,0 +1,104 @@
+{
+  "experiment": "EXPERIMENT_3_DIFFERENTIAL_LR",
+  "baseline": "EXPERIMENT_1_320",
+  "description": "Experiment 3 \u2014 Differential Learning Rate",
+  "model": "ResNet50Classifier(pretrained=True, freeze_features=False)",
+  "initialization": "torchvision ImageNet pretrained weights; newly initialized model.model.fc",
+  "class_mapping": {
+    "0": "normal",
+    "1": "early",
+    "2": "advanced"
+  },
+  "seed": 42,
+  "image_size": 320,
+  "batch_size": 16,
+  "amp_enabled": true,
+  "cuda_oom_occurred": false,
+  "epochs_completed": 24,
+  "maximum_epochs": 40,
+  "early_stopping_patience": 7,
+  "best_epoch": 17,
+  "best_validation_loss": 0.3627316129169737,
+  "checkpoint_criterion": "lowest validation CrossEntropyLoss",
+  "optimizer": "AdamW",
+  "backbone_learning_rate": 1e-05,
+  "classifier_learning_rate": 0.0001,
+  "weight_decay": 0.0001,
+  "scheduler": null,
+  "training_time_seconds": 1115.404488500004,
+  "validation_metrics": {
+    "accuracy": 0.8665607625099285,
+    "balanced_accuracy": 0.8541509552538965,
+    "macro_precision": 0.8536741085314513,
+    "macro_recall": 0.8541509552538965,
+    "macro_f1": 0.8538429996137017,
+    "qwk": 0.8591438267643833,
+    "loss": 0.3627316129169737
+  },
+  "classification_report": {
+    "normal": {
+      "precision": 0.8654822335025381,
+      "recall": 0.8461538461538461,
+      "f1-score": 0.8557089084065245,
+      "support": 403.0
+    },
+    "early": {
+      "precision": 0.774294670846395,
+      "recall": 0.7916666666666666,
+      "f1-score": 0.7828843106180665,
+      "support": 312.0
+    },
+    "advanced": {
+      "precision": 0.9212454212454212,
+      "recall": 0.9246323529411765,
+      "f1-score": 0.9229357798165138,
+      "support": 544.0
+    },
+    "accuracy": 0.8665607625099285,
+    "macro avg": {
+      "precision": 0.8536741085314513,
+      "recall": 0.8541509552538965,
+      "f1-score": 0.8538429996137017,
+      "support": 1259.0
+    },
+    "weighted avg": {
+      "precision": 0.8669791791605299,
+      "recall": 0.8665607625099285,
+      "f1-score": 0.8667098166964651,
+      "support": 1259.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      341,
+      43,
+      19
+    ],
+    [
+      41,
+      247,
+      24
+    ],
+    [
+      12,
+      29,
+      503
+    ]
+  ],
+  "directed_ordinal_errors": {
+    "Normal -> Early": 43,
+    "Normal -> Advanced": 19,
+    "Early -> Normal": 41,
+    "Early -> Advanced": 24,
+    "Advanced -> Early": 29,
+    "Advanced -> Normal": 12
+  },
+  "test_evaluated": false,
+  "artifacts": {
+    "checkpoint": "checkpoints\\exp3_differential_lr_best.pt",
+    "history": "results\\metrics\\exp3_differential_lr_history.json",
+    "confusion_matrix": "results\\figures\\exp3_differential_lr_confusion_matrix.png",
+    "training_curves": "results\\figures\\exp3_differential_lr_training_curves.png",
+    "learning_rates": "results\\figures\\exp3_differential_lr_learning_rates.png"
+  }
+}

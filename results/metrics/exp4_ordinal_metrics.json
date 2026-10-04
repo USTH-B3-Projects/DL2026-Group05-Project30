@@ -1,0 +1,156 @@
+{
+  "experiment": "EXPERIMENT_4_ORDINAL",
+  "baseline": "EXPERIMENT_1_320",
+  "description": "Experiment 4 \u2014 Ordinal Regression / Ordinal Loss",
+  "hypothesis": "An ordinal objective may better model glaucoma severity, reduce severe ordinal misclassifications, and improve QWK and Early-class performance.",
+  "controlled_change": "Three-class CrossEntropyLoss replaced by two-threshold cumulative ordinal regression with BCEWithLogitsLoss.",
+  "model": "ResNet50Classifier(num_classes=2, pretrained=True, freeze_features=False)",
+  "initialization": "torchvision ImageNet pretrained weights; independent run with a new two-logit head",
+  "ordinal_targets": {
+    "normal": [
+      0,
+      0
+    ],
+    "early": [
+      1,
+      0
+    ],
+    "advanced": [
+      1,
+      1
+    ]
+  },
+  "decoding": "sigmoid(logits) >= 0.5 for each threshold; predicted class is satisfied-threshold count",
+  "class_mapping": {
+    "0": "normal",
+    "1": "early",
+    "2": "advanced"
+  },
+  "seed": 42,
+  "image_size": 320,
+  "batch_size": 16,
+  "amp_enabled": true,
+  "cuda_oom_occurred": false,
+  "epochs_completed": 15,
+  "maximum_epochs": 20,
+  "early_stopping_patience": 5,
+  "best_epoch": 10,
+  "best_validation_loss": 0.16450191054247598,
+  "training_objective": "BCEWithLogitsLoss on cumulative ordinal targets",
+  "checkpoint_criterion": "lowest validation ordinal loss",
+  "optimizer": "AdamW",
+  "learning_rate": 0.0001,
+  "weight_decay": 0.0001,
+  "scheduler": null,
+  "training_time_seconds": 717.7573445000162,
+  "validation_metrics": {
+    "accuracy": 0.8991262907069102,
+    "balanced_accuracy": 0.8847405690977798,
+    "macro_precision": 0.8911033032947507,
+    "macro_recall": 0.8847405690977798,
+    "macro_f1": 0.887604617466498,
+    "qwk": 0.9015648091728259,
+    "loss": 0.16450191054247598
+  },
+  "per_class_metrics": {
+    "normal": {
+      "precision": 0.9086294416243654,
+      "recall": 0.8883374689826302,
+      "f1-score": 0.8983688833124216
+    },
+    "early": {
+      "precision": 0.8422818791946308,
+      "recall": 0.8044871794871795,
+      "f1-score": 0.8229508196721311
+    },
+    "advanced": {
+      "precision": 0.9223985890652557,
+      "recall": 0.9613970588235294,
+      "f1-score": 0.9414941494149415
+    }
+  },
+  "classification_report": {
+    "normal": {
+      "precision": 0.9086294416243654,
+      "recall": 0.8883374689826302,
+      "f1-score": 0.8983688833124216,
+      "support": 403.0
+    },
+    "early": {
+      "precision": 0.8422818791946308,
+      "recall": 0.8044871794871795,
+      "f1-score": 0.8229508196721311,
+      "support": 312.0
+    },
+    "advanced": {
+      "precision": 0.9223985890652557,
+      "recall": 0.9613970588235294,
+      "f1-score": 0.9414941494149415,
+      "support": 544.0
+    },
+    "accuracy": 0.8991262907069102,
+    "macro avg": {
+      "precision": 0.8911033032947507,
+      "recall": 0.8847405690977798,
+      "f1-score": 0.887604617466498,
+      "support": 1259.0
+    },
+    "weighted avg": {
+      "precision": 0.8981369688124252,
+      "recall": 0.8991262907069102,
+      "f1-score": 0.8983130524180611,
+      "support": 1259.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      358,
+      29,
+      16
+    ],
+    [
+      33,
+      251,
+      28
+    ],
+    [
+      3,
+      18,
+      523
+    ]
+  ],
+  "directed_ordinal_errors": {
+    "Normal -> Early": 29,
+    "Normal -> Advanced": 16,
+    "Early -> Normal": 33,
+    "Early -> Advanced": 28,
+    "Advanced -> Early": 18,
+    "Advanced -> Normal": 3
+  },
+  "experiment_1_validation_metrics": {
+    "accuracy": 0.9030976965845909,
+    "macro_f1": 0.8921901926829198,
+    "qwk": 0.9035011766608437,
+    "loss": 0.26483874226534904,
+    "balanced_accuracy": 0.8917169431875314,
+    "macro_precision": 0.8936326513429317,
+    "macro_recall": 0.8917169431875314
+  },
+  "metric_deltas_vs_experiment_1": {
+    "loss": -0.10033683172287305,
+    "accuracy": -0.003971405877680745,
+    "balanced_accuracy": -0.0069763740897516024,
+    "macro_f1": -0.004585575216421778,
+    "qwk": -0.0019363674880178428
+  },
+  "loss_comparison_note": "Cross-entropy and ordinal BCE have different scales; the loss delta is descriptive, not directly comparable.",
+  "decision": "Reject Experiment 4: all available major validation metrics decreased.",
+  "test_evaluated": false,
+  "artifacts": {
+    "checkpoint": "checkpoints\\exp4_ordinal_best.pt",
+    "metrics": "results\\metrics\\exp4_ordinal_metrics.json",
+    "history": "results\\metrics\\exp4_ordinal_history.json",
+    "confusion_matrix": "results\\figures\\exp4_ordinal_confusion_matrix.png",
+    "training_curves": "results\\figures\\exp4_ordinal_training_curves.png"
+  }
+}

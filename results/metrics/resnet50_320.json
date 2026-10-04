@@ -1,0 +1,32 @@
+{
+  "experiment": "EXPERIMENT_1_320",
+  "baseline": "BASELINE_224",
+  "model": "ResNet50Classifier(pretrained=True, freeze_features=False)",
+  "class_mapping": {
+    "0": "normal",
+    "1": "early",
+    "2": "advanced"
+  },
+  "image_size": 320,
+  "batch_size": 16,
+  "amp_enabled": true,
+  "cuda_oom_occurred": false,
+  "epochs_completed": 18,
+  "maximum_epochs": 20,
+  "early_stopping_patience": 5,
+  "best_epoch": 13,
+  "checkpoint_criterion": "lowest validation CrossEntropyLoss",
+  "optimizer": "AdamW",
+  "learning_rate": 0.0001,
+  "weight_decay": 0.0001,
+  "validation_metrics": {
+    "accuracy": 0.9030976965845909,
+    "balanced_accuracy": 0.8917169431875314,
+    "macro_precision": 0.8936326513429317,
+    "macro_recall": 0.8917169431875314,
+    "macro_f1": 0.8921901926829198,
+    "qwk": 0.9035011766608437,
+    "loss": 0.26483874226534904
+  },
+  "test_metrics": null
+}
