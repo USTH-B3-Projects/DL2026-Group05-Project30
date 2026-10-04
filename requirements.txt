@@ -1,0 +1,11 @@
+torch
+torchvision
+datasets
+scikit-learn
+matplotlib
+seaborn
+pandas
+pillow
+tqdm
+pytorch-grad-cam
+captum
