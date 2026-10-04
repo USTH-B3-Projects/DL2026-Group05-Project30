@@ -125,7 +125,11 @@ captum
 
 > `requirements.txt` will be updated with the exact versions actually used for training.
 
-## 6. How to run
+## 6. Dataset documentation
+ 
+See [`DATA.md`](DATA.md) for the official dataset URL, dataset version, data split, preprocessing procedure, and the exact script to reproduce the data used in the experiments — required for the course submission.
+
+## 7. How to run
 
 1. Clone the repo:
    ```bash
@@ -145,7 +149,7 @@ captum
 5. Save checkpoints to `checkpoints/` and results/metrics to `results/`.
 6. Once the best model is selected, run `05_xai_analysis.ipynb` to apply the 3 XAI methods and save the heatmaps to `results/figures/`.
 
-## 7. Demo for the presentation
+## 8. Demo for the presentation
  
 For the live demo in front of the lecturer, do **not** rely on `data/raw/` or on downloading the dataset on the spot — classroom Wi-Fi can be unreliable, and `data/raw/` is empty right after a fresh `git clone` (it's git-ignored).
  
@@ -154,7 +158,7 @@ Instead:
 - Point the demo script/notebook at `data/demo_samples/` instead of the full dataset when showing predictions + XAI heatmaps live.
 - Test the demo once on a freshly cloned copy of the repo beforehand, to confirm it runs without needing the full dataset or an internet connection.
 
-## 8. Collaboration conventions
+## 9. Collaboration conventions
 
 - Everyone works on their own branch (`feature/resnet50`, `feature/densenet121`, `feature/cnn-scratch`, `feature/xai-<method>`, ...) and merges into `main` via Pull Request.
 - Do not commit the raw dataset, model checkpoints (.pt/.pth), or other large files directly — add them to `.gitignore` and share via Drive/Kaggle Dataset if needed.
