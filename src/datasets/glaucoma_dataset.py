@@ -5,6 +5,8 @@ from datasets import load_dataset
 from PIL import Image
 from io import BytesIO
 
+import hashlib
+
 LABEL_MAP = {
     "normal": 0,
     "early": 1,
@@ -15,7 +17,7 @@ IDX_TO_CLASS = {v: k for k, v in LABEL_MAP.items()}
 train_transform = transforms.Compose([
     transforms.Resize((224, 224)), 
 
-    #Data augmentation
+    # Data augmentation
     transforms.RandomHorizontalFlip(p=0.5),
     transforms.RandomRotation(degrees=10),
     transforms.ColorJitter(
@@ -59,19 +61,48 @@ class GlaucomaDataset(Dataset):
             image = self.transform(image)
         return image, label
 
-def create_datasets(ds):
-    train_data = GlaucomaDataset(ds["train"], transform=train_transform)
-    val_data = GlaucomaDataset(ds["validation"], transform=eval_transform)
-    test_data = GlaucomaDataset(ds["test"], transform=eval_transform)
+def _hash_image(sample) -> str:
+    return hashlib.md5(sample["image"]["bytes"]).hexdigest()
 
-    return train_data, val_data, test_data
+def _drop_duplicates(hf_split):
+    seen = set()
+    keep_indices = []
+    for i, sample in enumerate(hf_split):
+        h = _hash_image(sample)
+        if h not in seen:
+            seen.add(h)
+            keep_indices.append(i)
+    return hf_split.select(keep_indices)
 
-def build_dataloaders(batch_size: int=32):
+def build_dataloaders(batch_size: int = 32):
     ds = load_dataset("moondream/glaucoma-detection")
-    train_data, val_data, test_data = create_datasets(ds)
+    
+    # Check for leakage across splits BEFORE deduplicating each split
+    train_hashes = {_hash_image(s) for s in ds["train"]}
+    val_hashes   = {_hash_image(s) for s in ds["validation"]}
+    test_hashes  = {_hash_image(s) for s in ds["test"]}
 
-    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False)
-    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
+    leak_train_val  = train_hashes & val_hashes
+    leak_train_test = train_hashes & test_hashes
+    if leak_train_val or leak_train_test:
+        print(f"[WARNING] Detected duplicate images between train/val: {len(leak_train_val)}, "
+              f"train/test: {len(leak_train_test)} -- needs to be processed before training.")
+
+    train_split = _drop_duplicates(ds["train"])
+    val_split   = _drop_duplicates(ds["validation"])
+    test_split  = _drop_duplicates(ds["test"])
+
+    print(f"After dedup: train {len(train_split)} (was {len(ds['train'])}), "
+          f"val {len(val_split)} (was {len(ds['validation'])}), "
+          f"test {len(test_split)} (was {len(ds['test'])})")
+
+    # Build datasets from the DEDUPLICATED splits, not the raw ones
+    train_ds = GlaucomaDataset(train_split, transform=train_transform)
+    val_ds   = GlaucomaDataset(val_split, transform=eval_transform)
+    test_ds  = GlaucomaDataset(test_split, transform=eval_transform)
+
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False)
+    test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False)
 
     return train_loader, val_loader, test_loader    
