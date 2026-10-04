@@ -29,7 +29,7 @@ Classify glaucoma severity from retinal fundus images, then apply XAI (Explainab
 ├── data/                       # Raw data is NOT committed to git (see .gitignore)
 │   ├── raw/                        # Original dataset downloaded manually from Hugging Face
 │   └── processed/                  # Preprocessed data (if any)
-│.  └── demo_samples/           # Sample images for live demos - IS committed to git
+│   └── demo_samples/           # Sample images for live demos - IS committed to git
 │
 ├── notebooks/                  # Notebooks run on Colab/Kaggle/Jupyter, kept for reference/reproducibility
 │   ├── data_exploration.ipynb
