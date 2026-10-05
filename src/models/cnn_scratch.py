@@ -10,7 +10,7 @@ class CNNScratch(nn.Module):
         [batch_size, num_classes]
     """
 
-    def __init__(self, num_classes=3):
+    def __init__(self, num_classes: int):
         super().__init__()
 
         self.block1 = nn.Sequential(
@@ -109,6 +109,30 @@ class CNNScratch(nn.Module):
             nn.MaxPool2d(kernel_size=2,stride=2)
         )
 
+        self.block5 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=256,
+                out_channels=512,
+                kernel_size=3,
+                padding=1,
+                bias = False
+            ),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+
+            nn.Conv2d(
+                in_channels=512,
+                out_channels=512,
+                kernel_size=3,
+                padding=1,
+                bias=False
+            ),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+
+            nn.MaxPool2d(kernel_size=2,stride=2)
+        )
+
         self.global_pool = nn.AdaptiveAvgPool2d((1,1))
 
         self.classifier = nn.Sequential(
@@ -135,8 +159,6 @@ class CNNScratch(nn.Module):
                 if module.bias is not None:
                     nn.init.constant_(module.bias,0)
                 
-
-
     def forward(self,x):
         x= self.block1(x)
         x= self.block2(x)
