@@ -64,20 +64,20 @@ class GlaucomaDataset(Dataset):
 def _hash_image(sample) -> str:
     return hashlib.md5(sample["image"]["bytes"]).hexdigest()
 
-def _drop_duplicates(hf_split):
+def _drop_duplicates(hf_set):
     seen = set()
     keep_indices = []
-    for i, sample in enumerate(hf_split):
+    for i, sample in enumerate(hf_set):
         h = _hash_image(sample)
         if h not in seen:
             seen.add(h)
             keep_indices.append(i)
-    return hf_split.select(keep_indices)
+    return hf_set.select(keep_indices)
 
 def build_dataloaders(batch_size: int = 32):
     ds = load_dataset("moondream/glaucoma-detection")
     
-    # Check for leakage across splits BEFORE deduplicating each split
+    # Check for leakage across sets BEFORE deduplicating each set
     train_hashes = {_hash_image(s) for s in ds["train"]}
     val_hashes   = {_hash_image(s) for s in ds["validation"]}
     test_hashes  = {_hash_image(s) for s in ds["test"]}
