@@ -2,13 +2,6 @@ import torch
 import torch.nn as nn
 
 class CNNScratch(nn.Module):
-    """
-    CNN built completely from scratch for glaucoma stage classification.
-    Expected input: 
-        [batch_size,3,416,416]
-    Output:
-        [batch_size, num_classes]
-    """
 
     def __init__(self, num_classes: int):
         super().__init__()

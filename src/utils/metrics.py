@@ -9,31 +9,15 @@ from sklearn.metrics import (
     confusion_matrix,
     classification_report,
 )
-
-from src.training.config import RESULTS_METRICS_DIR
-
-CLASS_NAMES = ["normal", "early", "advanced"]
-
+from src.training.config import RESULTS_METRICS_DIR, CLASS_NAMES
 
 def compute_metrics(labels: list, preds: list) -> dict:
-    """Compute classification metrics from predictions and ground-truth labels.
-
-    Args:
-        labels: Ground-truth class indices.
-        preds:  Predicted class indices.
-
-    Returns:
-        Dict with accuracy, macro F1, per-class precision/recall/F1,
-        and the confusion matrix (as a nested list).
-    """
+    
     acc = accuracy_score(labels, preds)
     f1_macro = f1_score(labels, preds, average="macro", zero_division=0)
-    precision = precision_score(labels, preds, average=None,
-                                labels=[0, 1, 2], zero_division=0)
-    recall = recall_score(labels, preds, average=None,
-                          labels=[0, 1, 2], zero_division=0)
-    f1_per_class = f1_score(labels, preds, average=None,
-                            labels=[0, 1, 2], zero_division=0)
+    precision = precision_score(labels, preds, average=None, labels=[0, 1, 2], zero_division=0)
+    recall = recall_score(labels, preds, average=None, labels=[0, 1, 2], zero_division=0)
+    f1_per_class = f1_score(labels, preds, average=None, labels=[0, 1, 2], zero_division=0)
     cm = confusion_matrix(labels, preds, labels=[0, 1, 2])
 
     per_class = {
@@ -46,23 +30,14 @@ def compute_metrics(labels: list, preds: list) -> dict:
     }
 
     return {
-        "accuracy":       round(float(acc), 4),
-        "f1_macro":       round(float(f1_macro), 4),
-        "per_class":      per_class,
+        "accuracy":         round(float(acc), 4),
+        "f1_macro":         round(float(f1_macro), 4),
+        "per_class":        per_class,
         "confusion_matrix": cm.tolist(),
     }
 
-
 def save_metrics(metrics: dict, model_name: str) -> str:
-    """Save a metrics dict to results/metrics/<model_name>.json.
-
-    Args:
-        metrics:    Output of compute_metrics().
-        model_name: e.g. "densenet121".
-
-    Returns:
-        Path to the saved file.
-    """
+    
     os.makedirs(RESULTS_METRICS_DIR, exist_ok=True)
     path = os.path.join(RESULTS_METRICS_DIR, f"{model_name}.json")
     with open(path, "w") as f:
@@ -70,9 +45,6 @@ def save_metrics(metrics: dict, model_name: str) -> str:
     print(f"Metrics saved → {path}")
     return path
 
-
 def print_report(labels: list, preds: list) -> None:
-    """Print a sklearn classification report to stdout."""
-    print(classification_report(labels, preds,
-                                target_names=CLASS_NAMES,
-                                zero_division=0))
+    # Print a sklearn classification report to stdout.
+    print(classification_report(labels, preds, target_names=CLASS_NAMES, zero_division=0))

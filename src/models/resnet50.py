@@ -3,16 +3,7 @@ import torch.nn as nn
 from torchvision.models import resnet50, ResNet50_Weights
 
 class ResNet50Classifier(nn.Module):
-    """ResNet50 model for classification with customizable output classes.
-        
-        Uses pretrained weights from torchvision. The final classifier layer
-        is replaced to match the target number of classes.
-        
-        Args:
-            num_classes: Number of output classes
-            pretrained: Whether to load ImageNet pretrained weights
-            freeze_features: Whether to freeze the feature extraction layers
-        """
+    
     def __init__(self, num_classes: int, pretrained: bool = True, freeze_features: bool = False):
         super().__init__()
 
@@ -20,7 +11,7 @@ class ResNet50Classifier(nn.Module):
         weights = ResNet50_Weights.DEFAULT if pretrained else None
         self.model = resnet50(weights=weights)
 
-        #Freeze backbone if requested
+        # Freeze backbone if requested
         if freeze_features:
             for param in self.model.parameters():
                 param.requires_grad = False

@@ -7,10 +7,6 @@ checkpoints/
 *.pt
 *.pth
 
-# Results
-results/figures/*.png
-results/figures/*.jpg
-
 # Jupyter
 .ipynb_checkpoints/
 

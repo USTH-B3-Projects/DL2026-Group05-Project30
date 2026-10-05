@@ -1,0 +1,38 @@
+{
+  "accuracy": 0.6699,
+  "f1_macro": 0.6481,
+  "per_class": {
+    "normal": {
+      "precision": 0.9287,
+      "recall": 0.6597,
+      "f1": 0.7714
+    },
+    "early": {
+      "precision": 0.3648,
+      "recall": 0.6125,
+      "f1": 0.4572
+    },
+    "advanced": {
+      "precision": 0.7129,
+      "recall": 0.7181,
+      "f1": 0.7155
+    }
+  },
+  "confusion_matrix": [
+    [
+      378,
+      146,
+      49
+    ],
+    [
+      24,
+      147,
+      69
+    ],
+    [
+      5,
+      110,
+      293
+    ]
+  ]
+}
