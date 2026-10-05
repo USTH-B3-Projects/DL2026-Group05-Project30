@@ -34,7 +34,7 @@ class CNNScratch(nn.Module):
             nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
 
-            nn.MaxPool2d(kernel_size=2,stride=2)
+            nn.MaxPool2d(kernel_size=2, stride=2)
         )
 
         self.block2 = nn.Sequential(
@@ -58,7 +58,7 @@ class CNNScratch(nn.Module):
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
 
-            nn.MaxPool2d(kernel_size=2,stride=2)
+            nn.MaxPool2d(kernel_size=2, stride=2)
         )
 
         self.block3 = nn.Sequential(
@@ -82,7 +82,7 @@ class CNNScratch(nn.Module):
             nn.BatchNorm2d(128),
             nn.ReLU(inplace=True),
 
-            nn.MaxPool2d(kernel_size=2,stride=2)
+            nn.MaxPool2d(kernel_size=2, stride=2)
         )
 
         self.block4 = nn.Sequential(
@@ -106,7 +106,7 @@ class CNNScratch(nn.Module):
             nn.BatchNorm2d(256),
             nn.ReLU(inplace=True),
 
-            nn.MaxPool2d(kernel_size=2,stride=2)
+            nn.MaxPool2d(kernel_size=2, stride=2)
         )
 
         self.block5 = nn.Sequential(
@@ -130,14 +130,14 @@ class CNNScratch(nn.Module):
             nn.BatchNorm2d(512),
             nn.ReLU(inplace=True),
 
-            nn.MaxPool2d(kernel_size=2,stride=2)
+            nn.MaxPool2d(kernel_size=2, stride=2)
         )
 
         self.global_pool = nn.AdaptiveAvgPool2d((1,1))
 
         self.classifier = nn.Sequential(
             nn.Dropout(p=0.5),
-            nn.Linear(256,num_classes)
+            nn.Linear(512, num_classes)
         )
 
         self._initialize_weights()
@@ -157,16 +157,17 @@ class CNNScratch(nn.Module):
                 nn.init.xavier_uniform_(module.weight)
 
                 if module.bias is not None:
-                    nn.init.constant_(module.bias,0)
+                    nn.init.constant_(module.bias, 0)
                 
     def forward(self,x):
-        x= self.block1(x)
-        x= self.block2(x)
-        x= self.block3(x)
-        x= self.block4(x)
+        x = self.block1(x)
+        x = self.block2(x)
+        x = self.block3(x)
+        x = self.block4(x)
+        x = self.block5(x)
 
         x=self.global_pool(x)
-        x=torch.flatten(x,start_dim =1)
+        x=torch.flatten(x, start_dim =1)
         x=self.classifier(x)
 
         return x
