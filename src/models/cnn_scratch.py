@@ -137,7 +137,7 @@ class CNNScratch(nn.Module):
 
         self.classifier = nn.Sequential(
             nn.Dropout(p=0.5),
-            nn.Linear(256,num_classes)
+            nn.Linear(512, num_classes)
         )
 
         self._initialize_weights()
@@ -157,7 +157,7 @@ class CNNScratch(nn.Module):
                 nn.init.xavier_uniform_(module.weight)
 
                 if module.bias is not None:
-                    nn.init.constant_(module.bias,0)
+                    nn.init.constant_(module.bias, 0)
                 
     def forward(self,x):
         x = self.block1(x)
@@ -167,7 +167,7 @@ class CNNScratch(nn.Module):
         x = self.block5(x)
 
         x=self.global_pool(x)
-        x=torch.flatten(x,start_dim =1)
+        x=torch.flatten(x, start_dim =1)
         x=self.classifier(x)
 
         return x
