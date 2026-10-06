@@ -154,9 +154,8 @@ See [`DATA.md`](DATA.md) for the official dataset URL, dataset version, data spl
 
 ## 7. Demo for the presentation
 
-- Put 5–10 representative fundus images in `demo_samples/`. This folder **is** committed to git, so it's immediately available right after `git clone`, on any machine, with no Hugging Face/internet dependency.
-- Point the demo script/notebook at `demo_samples/` instead of the full dataset when showing predictions + XAI heatmaps live.
-- Test the demo once on a freshly cloned copy of the repo beforehand, to confirm it runs without needing the full dataset or an internet connection.
+- Put 5–10 representative fundus images in `demo_samples/`.
+- Use `notebooks/demo.ipynb` to load the selected checkpoint, then run prediction and all 3 XAI methods (LayerCAM, GradCAM++, Occlusion) on images from `demo_samples/` instead of the full dataset. Set `DEMO_MODE` at the top of the notebook to pick how the image(s) are sourced for a given run: `'all'` (every image in `demo_samples/`), `'random'` (one random image from it), or `'named'` (one specific file, via `DEMO_IMAGE_NAME`).
 
 ## 8. Collaboration conventions
 
