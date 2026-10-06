@@ -7,12 +7,10 @@
 ## 2. Dataset version
 
 - Version used: the dataset revision available on the Hugging Face Hub, verified directly by loading it on **25-09-2026**.
-- No separate versioned release/tag is published by the dataset authors; `datasets.load_dataset()` pins to the current main revision on the Hub unless a `revision=` commit hash is passed. The exact commit hash used for the experiments will be recorded here once training starts, by running:
-  ```python
-  from datasets import load_dataset
-  ds = load_dataset("moondream/glaucoma-detection")
-  print(ds["train"].info.download_checksums)  # or capture the dataset's commit hash via the `huggingface_hub` API
-  ```
+- No separate versioned release/tag is published by the dataset authors; `datasets.load_dataset()` pins to the current main revision on the Hub unless a `revision=` commit hash is passed. The exact commit hash of the revision used for the experiments (retrieved via `huggingface_hub.HfApi().dataset_info("moondream/glaucoma-detection").sha`):
+```
+  56d14df317198383ba7ff7005e8a6cb904785a67
+```
 
 ## 3. Data split
 
@@ -27,7 +25,14 @@ The dataset is pre-split by the authors into 3 subsets, used as-is (no re-splitt
 
 - **Features:** `image` (JPEG bytes, `decode=False` — must be decoded manually, see Section 4), `class` (string).
 - **Classes (3):** `"normal"`, `"early"`, `"advanced"` — glaucoma severity, mapped to integer indices `0, 1, 2` respectively (see `LABEL_MAP` in `src/datasets/glaucoma_dataset.py`). All 3 models must use this exact mapping so a given index means the same severity everywhere.
-- Per-class image counts have not been tallied yet; add them here once computed (e.g. `Counter(ds["train"]["class"])`), in case the classes are imbalanced.
+- **Per-class image counts:**
+  | Split | normal | early | advanced |
+  |---|---|---|---|
+  | Train | 1,004 | 677 | 1,166 |
+  | Validation | 403 | 312 | 544 |
+  | Test | 574 | 262 | 436 |
+  
+  The dataset is moderately imbalanced — `early` is the minority class in every split (roughly half the size of `advanced`), which is consistent with `early`'s low recall being the hardest class to get right during model training.
 
 ## 4. Preprocessing procedure
 
@@ -67,4 +72,4 @@ This is used as-is for the CNN-from-scratch and DenseNet121 pipelines. For **Res
 
 No new or separately processed dataset is published by this team — the original Hugging Face dataset is used directly through the pipeline above, so no additional downloadable link is provided beyond the official dataset URL in Section 1.
 
-A handful of representative images are also committed under `data/demo_samples/` (not the full dataset) so the live presentation demo does not depend on re-downloading data or on an internet connection — see the README, section "Demo for the presentation".
+A handful of representative images are also committed under `demo_samples/` (not the full dataset) so the live presentation demo does not depend on re-downloading data or on an internet connection — see the README, section "Demo for the presentation".
