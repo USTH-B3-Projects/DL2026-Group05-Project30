@@ -1,0 +1,425 @@
+\documentclass[conference]{IEEEtran}
+
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{multirow}
+\usepackage{float}
+\usepackage[utf8]{inputenc}
+
+\title{Glaucoma Stage Classification from Retinal Fundus Images Using DenseNet121 Transfer Learning}
+
+\author{
+\IEEEauthorblockN{Group 5}
+\IEEEauthorblockA{
+Deep Learning Course -- USTH B3 \\
+University of Science and Technology of Hanoi \\
+2026
+}
+}
+
+\begin{document}
+
+\maketitle
+
+% ============================================================
+\begin{abstract}
+Glaucoma is a leading cause of irreversible blindness worldwide, and early detection of its progression stage is critical for timely intervention.
+This paper presents a DenseNet121-based transfer learning approach for classifying retinal fundus images into three glaucoma severity stages: normal, early, and advanced.
+We employ a two-phase training strategy---frozen backbone followed by full fine-tuning---on the publicly available \texttt{moondream/glaucoma-detection} dataset from Hugging Face.
+After deduplication to eliminate data leakage across splits, our model achieves \textbf{91.81\%} accuracy, \textbf{0.9065} macro F1-score, and a Quadratic Weighted Kappa (QWK) of \textbf{0.9049} on the held-out test set.
+We also investigate the effect of class weighting and enhanced regularization, finding that the baseline configuration without these additions yields superior performance.
+These results demonstrate the effectiveness of transfer learning with DenseNet121 for ordinal glaucoma classification.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Glaucoma classification, transfer learning, DenseNet121, retinal fundus images, deep learning, medical image classification
+\end{IEEEkeywords}
+
+% ============================================================
+\section{Introduction}
+\label{sec:intro}
+
+Glaucoma is a group of eye diseases that damage the optic nerve, often associated with elevated intraocular pressure.
+It is the second leading cause of blindness globally, affecting over 80 million people, with projections reaching 111.8 million by 2040~\cite{tham2014global}.
+The disease progresses through stages---from normal to early glaucomatous changes to advanced damage---and early detection is essential because vision loss from glaucoma is irreversible.
+
+Retinal fundus imaging is a non-invasive, widely available screening modality.
+However, manual interpretation by ophthalmologists is time-consuming and subject to inter-observer variability.
+Automated classification systems based on deep learning offer the potential for consistent, scalable screening.
+
+In this work, we train a DenseNet121 model via transfer learning to classify fundus images into three severity stages.
+We adopt a two-phase training strategy: first training only the classifier head with a frozen backbone, then fine-tuning the entire network.
+We evaluate the model using accuracy, macro F1-score, per-class metrics, and Quadratic Weighted Kappa (QWK)---a metric particularly suited to ordinal classification tasks where the severity of misclassification errors matters.
+
+We also experiment with class weighting and enhanced regularization (increased dropout and weight decay) to address class imbalance and overfitting.
+We find that these modifications do not improve performance over the baseline, and we discuss possible reasons.
+
+This report presents a complete evaluation of DenseNet121 for automated glaucoma stage classification, including dataset preprocessing, training methodology, comprehensive results, and ablation studies.
+
+% ============================================================
+\section{Related Work}
+\label{sec:related}
+
+Deep learning has been widely applied to glaucoma detection from fundus images.
+Most prior work frames the problem as binary classification (glaucoma vs.\ normal), achieving high accuracy using various convolutional neural network architectures~\cite{li2018efficacy}.
+
+DenseNet121~\cite{huang2017densely} is particularly well-suited for medical imaging due to its dense connectivity pattern, which encourages feature reuse across layers and enables strong performance with fewer parameters than comparably deep architectures.
+Transfer learning from ImageNet-pretrained models has been shown to significantly improve performance on medical imaging tasks where labelled data is limited~\cite{raghu2019transfusion}.
+
+Multi-class staging of glaucoma severity (rather than binary detection) is less commonly studied but clinically more informative, as it directly maps to treatment decisions.
+Our work addresses this three-class formulation using the ordinal structure of the disease progression.
+
+Quadratic Weighted Kappa has been used extensively in diabetic retinopathy grading~\cite{kaggle2015dr} and is appropriate here because it penalizes misclassifications proportionally to their distance on the ordinal scale---confusing normal with advanced is penalized more heavily than confusing normal with early.
+
+% ============================================================
+\section{Dataset}
+\label{sec:dataset}
+
+\subsection{Source and Structure}
+
+We use the \texttt{moondream/glaucoma-detection} dataset hosted on Hugging Face~\cite{hf_glaucoma}.
+The dataset contains retinal fundus images labelled with three glaucoma severity classes: \texttt{normal}, \texttt{early}, and \texttt{advanced}.
+
+The dataset is pre-split by the authors into train, validation, and test subsets:
+
+\begin{table}[H]
+\centering
+\caption{Original dataset split sizes}
+\label{tab:original_split}
+\begin{tabular}{lc}
+\toprule
+\textbf{Split} & \textbf{Images} \\
+\midrule
+Train & 2,847 \\
+Validation & 1,259 \\
+Test & 1,272 \\
+\midrule
+\textbf{Total} & \textbf{5,378} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Data Leakage and Deduplication}
+
+During exploratory analysis, we discovered significant duplication of images across splits: 459 duplicate images shared between train and validation, and 358 between train and test.
+Cross-split duplication constitutes data leakage, which would inflate evaluation metrics by allowing the model to memorize test samples during training.
+
+We addressed this by computing MD5 hashes of raw image bytes and removing duplicates within each split.
+The deduplicated split sizes are:
+
+\begin{table}[H]
+\centering
+\caption{Dataset sizes after deduplication}
+\label{tab:dedup_split}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Split} & \textbf{Before} & \textbf{After} \\
+\midrule
+Train & 2,847 & 2,341 \\
+Validation & 1,259 & 1,163 \\
+Test & 1,272 & 1,221 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All experiments in this report use the deduplicated splits.
+
+\subsection{Preprocessing}
+
+All images are processed identically across models:
+
+\begin{enumerate}
+    \item \textbf{Resize} to $224 \times 224$ pixels (required by ImageNet-pretrained models).
+    \item \textbf{Training augmentation:} random horizontal flip ($p=0.5$), random rotation ($\pm 10°$), and colour jitter (brightness $\pm 0.1$, contrast $\pm 0.1$, saturation $\pm 0.05$).
+    \item \textbf{Normalization} using ImageNet channel statistics: mean $= [0.485, 0.456, 0.406]$, std $= [0.229, 0.224, 0.225]$.
+    \item \textbf{Label mapping:} \texttt{normal} $\rightarrow 0$, \texttt{early} $\rightarrow 1$, \texttt{advanced} $\rightarrow 2$.
+\end{enumerate}
+
+No augmentation is applied during validation or testing.
+
+% ============================================================
+\section{Methodology}
+\label{sec:method}
+
+\subsection{Model Architecture}
+
+We use DenseNet121~\cite{huang2017densely} pretrained on ImageNet as the feature extractor.
+DenseNet's dense connectivity---where each layer receives feature maps from all preceding layers---promotes feature reuse and gradient flow, making it effective for fine-grained visual classification tasks.
+
+The original 1000-class ImageNet classifier is replaced with a single linear layer mapping from 1024 features to 3 output classes:
+
+\begin{equation}
+    \hat{y} = W \cdot \text{GAP}(F(x)) + b
+\end{equation}
+
+where $F(x)$ denotes the DenseNet121 feature extractor, GAP is global average pooling, and $W \in \mathbb{R}^{3 \times 1024}$.
+
+Total parameters: 6,956,931 (of which 3,075 are in the classifier head).
+
+\subsection{Training Strategy}
+
+We adopt a two-phase transfer learning strategy:
+
+\textbf{Phase 1: Frozen backbone (5 epochs).}
+All convolutional layers are frozen; only the classifier head is trained.
+This allows the randomly initialized head to converge without corrupting the pretrained features.
+A higher learning rate ($10 \times$ base) is used since only the small head is being optimized.
+
+\textbf{Phase 2: Full fine-tuning (3 consecutive runs of up to 20 epochs each).}
+All layers are unfrozen and trained end-to-end with the base learning rate.
+Each run saves an independent best checkpoint based on validation loss, with early stopping (patience = 5 epochs).
+
+\subsection{Hyperparameters}
+
+\begin{table}[H]
+\centering
+\caption{Training hyperparameters}
+\label{tab:hyperparams}
+\begin{tabular}{ll}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Optimizer & Adam \\
+Base learning rate & $1 \times 10^{-4}$ \\
+Phase 1 learning rate & $1 \times 10^{-3}$ \\
+Weight decay & $1 \times 10^{-4}$ \\
+Batch size & 32 \\
+Image size & $224 \times 224$ \\
+Loss function & Cross-entropy \\
+Early stopping patience & 5 epochs \\
+Random seed & 42 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Evaluation Metrics}
+
+We report the following metrics on the held-out test set:
+
+\begin{itemize}
+    \item \textbf{Accuracy:} overall proportion of correct predictions.
+    \item \textbf{Macro F1-score:} unweighted mean of per-class F1 scores, treating all classes equally regardless of size.
+    \item \textbf{Per-class precision, recall, and F1:} to identify class-specific strengths and weaknesses.
+    \item \textbf{Quadratic Weighted Kappa (QWK):} measures agreement between predicted and true ordinal labels, penalizing misclassifications proportionally to the square of their distance on the ordinal scale. Defined as:
+\end{itemize}
+
+\begin{equation}
+    \kappa_w = 1 - \frac{\sum_{i,j} w_{i,j} \cdot O_{i,j}}{\sum_{i,j} w_{i,j} \cdot E_{i,j}}
+\end{equation}
+
+where $w_{i,j} = (i - j)^2 / (N-1)^2$ is the quadratic weight, $O$ is the observed confusion matrix, and $E$ is the expected matrix under random agreement.
+QWK ranges from $-1$ (systematic disagreement) to $1$ (perfect agreement), with values above 0.8 indicating strong agreement.
+
+% ============================================================
+\section{Results}
+\label{sec:results}
+
+\subsection{Training Progression}
+
+\textbf{Phase 1} (frozen backbone, 5 epochs) brought validation accuracy from 64.4\% to 70.4\%, with the best validation loss of 0.7095 at epoch 4.
+
+\textbf{Phase 2} (full fine-tuning) was run in three consecutive blocks.
+The best checkpoint was obtained in Run 1, epoch 8, achieving a validation loss of 0.2499 and validation accuracy of 91.6\%.
+Subsequent runs (Run 2 and Run 3) showed diminishing returns, with best validation losses of 0.2945 and 0.2599 respectively.
+
+Figure~\ref{fig:training_curves} shows the training curves for Phase 2 Run 1, illustrating the characteristic gap between training and validation loss that widens as the model begins to overfit after epoch 8.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\columnwidth]{results/figures/densenet121_phase2_run1_training_curves.png}
+\caption{Training and validation loss curves for Phase 2 Run 1. The model achieves its best validation loss at epoch 8, after which the gap widens.}
+\label{fig:training_curves}
+\end{figure}
+
+\subsection{Test Set Performance}
+
+Using the best checkpoint from Phase 2, evaluated on the deduplicated test set (1,221 images):
+
+\begin{table}[H]
+\centering
+\caption{DenseNet121 baseline test set metrics}
+\label{tab:test_metrics}
+\begin{tabular}{lc}
+\toprule
+\textbf{Metric} & \textbf{Value} \\
+\midrule
+Accuracy & 0.9181 \\
+Macro F1-score & 0.9065 \\
+Quadratic Weighted Kappa & 0.9049 \\
+Test loss & 0.2837 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Per-class performance on the test set}
+\label{tab:per_class}
+\begin{tabular}{lcccr}
+\toprule
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{Support} \\
+\midrule
+Normal   & 0.9613 & 0.9092 & 0.9345 & 573 \\
+Early    & 0.8500 & 0.8500 & 0.8500 & 240 \\
+Advanced & 0.9021 & 0.9706 & 0.9351 & 408 \\
+\midrule
+\textbf{Macro avg} & 0.9045 & 0.9099 & 0.9065 & 1,221 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Confusion Matrix Analysis}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\columnwidth]{results/figures/densenet121_confusion_matrix.png}
+\caption{Confusion matrix on the test set. Diagonal values indicate correct predictions.}
+\label{fig:confusion_matrix}
+\end{figure}
+
+Key observations from the confusion matrix (Figure~\ref{fig:confusion_matrix}):
+
+\begin{itemize}
+    \item \textbf{Advanced glaucoma detection is strongest:} 396 of 408 advanced cases (97.1\%) are correctly identified, with only 4 misclassified as normal. This is clinically important---the model rarely misses severe cases.
+    \item \textbf{Normal classification has highest precision:} 96.1\% of images predicted as normal are truly normal, minimizing false reassurance.
+    \item \textbf{Early stage is the weakest:} 17 early cases are missed as normal (7.1\%), and 19 are over-classified as advanced (7.9\%). While the 0.85 F1 is the lowest, the nature of errors is partially mitigated: over-classification as advanced leads to further examination rather than missed diagnosis.
+    \item \textbf{Very few dangerous misclassifications:} only 4 advanced cases are predicted as normal, representing a 0.98\% rate of the most clinically dangerous error.
+\end{itemize}
+
+\subsection{QWK Interpretation}
+
+The QWK of 0.9049 indicates near-perfect ordinal agreement.
+This confirms that when the model does make errors, they tend to be between adjacent categories (normal$\leftrightarrow$early, or early$\leftrightarrow$advanced) rather than across the full severity range (normal$\leftrightarrow$advanced).
+For clinical deployment, this is a desirable property: the model respects the ordinal structure of glaucoma progression.
+
+% ============================================================
+\section{Ablation: Class Weighting and Enhanced Regularization}
+\label{sec:ablation}
+
+To address two identified weaknesses---lower early-stage performance and training overfitting---we experimented with:
+
+\begin{enumerate}
+    \item \textbf{Inverse-frequency class weights} in the cross-entropy loss, giving higher weight to the underrepresented early class.
+    \item \textbf{Increased regularization:} dropout ($p = 0.5$) added to the classifier head, and weight decay increased from $1 \times 10^{-4}$ to $5 \times 10^{-4}$.
+\end{enumerate}
+
+\begin{table}[H]
+\centering
+\caption{Baseline vs.\ regularized configuration comparison}
+\label{tab:comparison}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Metric} & \textbf{Baseline} & \textbf{Modified} & \textbf{$\Delta$} \\
+\midrule
+Accuracy     & 0.9181 & 0.9099 & $-0.0082$ \\
+F1 macro     & 0.9065 & 0.8974 & $-0.0091$ \\
+QWK          & 0.9049 & 0.8994 & $-0.0055$ \\
+\midrule
+Normal F1    & 0.9345 & 0.9264 & $-0.0081$ \\
+Early F1     & 0.8500 & 0.8327 & $-0.0173$ \\
+Advanced F1  & 0.9351 & 0.9330 & $-0.0021$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The modified model performed worse across all metrics.
+Contrary to our expectation, class weights \textit{reduced} early-stage F1 from 0.85 to 0.83.
+
+\textbf{Analysis of failure.} Several factors likely contributed:
+
+\begin{itemize}
+    \item \textbf{Class weights introduced training instability.} Phase 1 converged more slowly (59.4\% vs.\ 67.7\% final training accuracy), suggesting the weighted loss made the frozen-head optimization landscape more difficult to navigate.
+    \item \textbf{The overfitting gap persisted.} Training accuracy still reached 99.5\% while validation plateaued at $\sim$92\%, indicating that the additional regularization was insufficient to constrain the 7-million-parameter model.
+    \item \textbf{Single fine-tuning run vs.\ three.} The baseline benefited from three consecutive fine-tuning runs (effectively 34 epochs of fine-tuning with multiple restarts), while the modified model ran a single 20-epoch block.
+\end{itemize}
+
+Based on these results, we selected the \textbf{baseline model without class weights or enhanced regularization} as the final DenseNet121 model.
+
+% ============================================================
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Strengths}
+
+The DenseNet121 model achieves strong classification performance with a QWK of 0.90, indicating that its errors respect the ordinal structure of glaucoma progression.
+The two-phase training strategy is effective: Phase 1 stabilizes the classifier head before Phase 2 refines the full network.
+
+The model's error profile is clinically appropriate: it has very high recall for advanced cases (97.1\%) and high precision for normal predictions (96.1\%), minimizing the most dangerous failure modes (missing advanced disease or falsely reassuring patients).
+
+\subsection{Limitations}
+
+\begin{itemize}
+    \item \textbf{Early-stage detection} remains the weakest point (F1 = 0.85). This is the most clinically valuable stage to detect, as intervention can prevent progression. The early class also has the fewest training samples (smallest support in test set: 240), which likely contributes to lower performance.
+    \item \textbf{Overfitting} is evident from the training curves. The model reaches $>$99\% training accuracy while validation accuracy plateaus around 92\%, suggesting the model memorizes training examples rather than learning fully generalizable features.
+    \item \textbf{Data quality.} The original dataset contained significant cross-split duplication (459 + 358 images). While we addressed this via deduplication, the underlying data quality raises concerns about label consistency and image provenance.
+    \item \textbf{Single dataset, single seed.} Results are from one random seed on one dataset split. Cross-validation or multi-seed evaluation would provide more robust estimates of model performance.
+\end{itemize}
+
+\subsection{Future Directions}
+
+Several avenues exist for further improving glaucoma classification performance:
+
+\begin{itemize}
+    \item \textbf{Focal loss} to better handle hard examples and class imbalance, particularly for the early stage.
+    \item \textbf{Ensemble methods} combining multiple checkpoints or model architectures.
+    \item \textbf{Cross-validation} to obtain more robust performance estimates.
+    \item \textbf{Explainability analysis} using Grad-CAM or SHAP to visualize which retinal features drive predictions.
+\end{itemize}
+
+% ============================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+We presented a DenseNet121-based approach for three-class glaucoma stage classification from retinal fundus images, achieving 91.81\% accuracy and a QWK of 0.9049.
+The model demonstrates strong ordinal agreement, rarely confusing normal with advanced cases.
+
+Our ablation study showed that class weighting and enhanced regularization did not improve upon the baseline, suggesting that the standard transfer learning pipeline with early stopping is already well-suited to this task and dataset size.
+
+The early-stage class remains the primary area for improvement.
+Future work should explore focal loss, more aggressive data augmentation specific to the early class, and XAI methods (Grad-CAM, SHAP) to understand which retinal features drive the model's predictions---particularly for the challenging early-stage cases where the visual differences from normal are most subtle.
+
+% ============================================================
+\section*{Reproducibility}
+
+All code is available at \url{https://github.com/USTH-B3-Projects/DL2026-Group5-Project30}.
+The dataset is publicly available on Hugging Face (\texttt{moondream/glaucoma-detection}).
+Training was performed on an NVIDIA GeForce RTX 5050 Laptop GPU (8GB VRAM) with PyTorch and random seed 42.
+
+% ============================================================
+\begin{thebibliography}{9}
+
+\bibitem{tham2014global}
+Y.-C.~Tham, X.~Li, T.~Y.~Wong, H.~A.~Quigley, T.~Aung, and C.-Y.~Cheng,
+``Global prevalence of glaucoma and projections of glaucoma burden through 2040: A systematic review and meta-analysis,''
+\textit{Ophthalmology}, vol.~121, no.~11, pp.~2081--2090, 2014.
+
+\bibitem{huang2017densely}
+G.~Huang, Z.~Liu, L.~van~der~Maaten, and K.~Q.~Weinberger,
+``Densely connected convolutional networks,''
+in \textit{Proc.\ IEEE Conf.\ Computer Vision and Pattern Recognition (CVPR)}, 2017, pp.~4700--4708.
+
+\bibitem{li2018efficacy}
+Z.~Li \textit{et al.},
+``Efficacy of a deep learning system for detecting glaucomatous optic neuropathy based on color fundus photographs,''
+\textit{Ophthalmology}, vol.~125, no.~8, pp.~1199--1206, 2018.
+
+\bibitem{raghu2019transfusion}
+M.~Raghu, C.~Zhang, J.~Kleinberg, and S.~Bengio,
+``Transfusion: Understanding transfer learning for medical imaging,''
+in \textit{Advances in Neural Information Processing Systems (NeurIPS)}, 2019.
+
+\bibitem{kaggle2015dr}
+Kaggle,
+``Diabetic retinopathy detection,''
+2015. [Online]. Available: \url{https://www.kaggle.com/c/diabetic-retinopathy-detection}
+
+\bibitem{hf_glaucoma}
+Moondream,
+``Glaucoma detection dataset,''
+Hugging Face, 2024. [Online]. Available: \url{https://huggingface.co/datasets/moondream/glaucoma-detection}
+
+\end{thebibliography}
+
+\end{document}
