@@ -1,7 +1,3 @@
-# Data directories
-data/raw/
-data/processed/
-
 # Model checkpoints
 checkpoints/
 *.pt
