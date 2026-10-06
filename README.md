@@ -1,4 +1,4 @@
-# Explainable Retinal Image Classification (Glaucoma Detection)
+# Explainable Retinal Image Classification (Glaucoma Severity Detection)
 
 Classify glaucoma severity from retinal fundus images, then apply XAI (Explainable AI) methods to visualize and explain which regions drive the model's predictions.
 
@@ -8,7 +8,7 @@ Classify glaucoma severity from retinal fundus images, then apply XAI (Explainab
 - **Pipeline:**
   1. Train 3 models: **CNN built from scratch**, **DenseNet121**, **ResNet50** (the latter two via transfer learning).
   2. Compare their performance and select the **best-performing model**.
-  3. Apply **3 XAI methods — LayerCAM, GradCAM++, Occlusion** — to the checkpoint of the selected model, in a single notebook that runs all 3 methods together.
+  3. Apply **3 XAI methods (LayerCAM, GradCAM++, Occlusion)** to the checkpoint of the selected model, in a single notebook that runs all 3 methods together.
 - **Main library:** PyTorch (`torch`, `torchvision`).
 - **Training environment:** Google Colab / Kaggle Notebooks / Jupyter Notebook — code is still written and version-controlled in this repo (edited in VSCode, actually run on the notebook platforms).
 
@@ -32,9 +32,7 @@ Classify glaucoma severity from retinal fundus images, then apply XAI (Explainab
 │   │   ├── cnn_scratch.py          
 │   │   ├── densenet121.py          
 │   │   └── resnet50.py             
-│   ├── xai/                        
-│   │   │                          
-│   │   ├── __init__.py
+│   ├── xai/
 │   │   ├── common.py               
 │   │   ├── cam_methods.py          
 │   │   └── occlusion.py            
@@ -45,9 +43,9 @@ Classify glaucoma severity from retinal fundus images, then apply XAI (Explainab
 │       ├── metrics.py          
 │       └── visualize.py  
 │
-├── checkpoints/                    # Trained model weights (.pt) — not committed to git (see .gitignore);
+├── checkpoints/                   # Trained model weights, saved in Google Drive
 │                                 
-├── results/                        # Results: model comparison tables, XAI heatmaps, training logs
+├── results/                       # Results: model comparison tables, XAI heatmaps, training logs
 │   ├── metrics/                     
 │   └── figures/
 │   └── xai/                   
@@ -73,8 +71,8 @@ Classify glaucoma severity from retinal fundus images, then apply XAI (Explainab
 | `src/training/train_loop.py` | **Does not define or create a model** — it receives an already-built model as an argument and runs the training process on it (`train_one_epoch`, `evaluate`, `fit`). The same training procedure (same order of `zero_grad`/`backward`/`step`, same loss handling) is reused for all 3 models, called separately in each pair's own notebook. |
 | `src/utils/metrics.py` | Runs **after** training/evaluation. Takes the predictions + true labels that `evaluate()` produced and turns them into accuracy, F1, and a confusion matrix, then saves them to `results/metrics/<model_name>.json` so the 3 models can be compared side by side. |
 | `src/utils/visualize.py` | Plotting helpers: training-curve plots (train/val loss per epoch from `fit()`'s `history`) and confusion-matrix heatmaps. |
-| `src/xai/common.py` | Shared helpers for the 3 XAI methods on the selected final model (ResNet50): `load_model(checkpoint_name)` rebuilds the model and loads trained weights, `denormalize()` converts a normalized tensor back to a displayable `[0, 1]` RGB image, and `pick_best_checkpoint()` can pick the best seed automatically from saved metrics (kept available, not required now that the team locked in the seed `2026` checkpoint directly). |
-| `src/xai/cam_methods.py`, `occlusion.py` | Run **after** the best model (ResNet50) is selected. `cam_methods.py` exposes `run_layercam()` and `run_gradcam_plusplus()` (both via `pytorch-grad-cam`, need gradients); `occlusion.py` exposes `run_occlusion()` (via `captum`, gradient-free). All 3 take the same `(model, input_tensor, target_class, rgb_float)`-style arguments and return an overlay image, so `notebooks/xai_analysis.ipynb` can call all 3 side by side on the same sample. |
+| `src/xai/common.py` | Shared helpers for the 3 XAI methods on the selected final model: `load_model(checkpoint_name)` rebuilds the model and loads trained weights, `denormalize()` converts a normalized tensor back to a displayable `[0, 1]` RGB image. |
+| `src/xai/cam_methods.py`, `occlusion.py` | Run **after** the best model is selected. `cam_methods.py` exposes `run_layercam()` and `run_gradcam_plusplus()` (both via `pytorch-grad-cam`, need gradients); `occlusion.py` exposes `run_occlusion()` (via `captum`, gradient-free). All 3 take the same `(model, input_tensor, target_class, rgb_float)`-style arguments and return an overlay image, so `notebooks/xai_analysis.ipynb` can call all 3 side by side on the same sample. |
 
 **How they connect**, in the order a notebook actually calls them:
 
@@ -89,8 +87,6 @@ visualize.py          →  plots from history / metrics
 xai/common.py         →  load_model(checkpoint_name) → model, target_layers
 xai/cam_methods.py    →  run_layercam(...), run_gradcam_plusplus(...) → overlay image
 xai/occlusion.py      →  run_occlusion(...) → overlay image
-                      →  (only run on the selected ResNet50 checkpoint, after comparison;
-                      →   all 3 called together from notebooks/xai_analysis.ipynb)
 ```
 
 ## 4. Libraries used
@@ -129,7 +125,7 @@ See `requirements.txt` / `pyproject.toml` for the exact version floors used for 
 
 ## 5. Dataset documentation
 
-See [`DATA.md`](DATA.md) for the official dataset URL, dataset version, data split, preprocessing procedure, and the exact script to reproduce the data used in the experiments — required for the course submission.
+See [`DATA.md`](DATA.md) for the official dataset URL, dataset version, data split, preprocessing procedure, and the exact script to reproduce the data used in the experiments.
 
 ## 6. How to run
 
@@ -157,9 +153,6 @@ See [`DATA.md`](DATA.md) for the official dataset URL, dataset version, data spl
 
 ## 7. Demo for the presentation
 
-For the live demo, do **not** rely on downloading the full dataset on the spot — classroom Wi-Fi can be unreliable.
-
-Instead:
 - Put 5–10 representative fundus images in `demo_samples/`. This folder **is** committed to git, so it's immediately available right after `git clone`, on any machine, with no Hugging Face/internet dependency.
 - Point the demo script/notebook at `demo_samples/` instead of the full dataset when showing predictions + XAI heatmaps live.
 - Test the demo once on a freshly cloned copy of the repo beforehand, to confirm it runs without needing the full dataset or an internet connection.
