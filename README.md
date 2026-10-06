@@ -39,7 +39,7 @@ Classify glaucoma severity from retinal fundus images, then apply XAI (Explainab
 │   ├── training/
 │   │   ├── train_loop.py          
 │   │   └── config.py    
-│   ├── utils/
+│   └── utils/
 │       ├── metrics.py          
 │       └── visualize.py  
 │
@@ -48,7 +48,7 @@ Classify glaucoma severity from retinal fundus images, then apply XAI (Explainab
 ├── results/                       # Results: model comparison tables, XAI heatmaps, training logs
 │   ├── metrics/                     
 │   └── figures/
-│   └── xai/                   
+│       └── xai/                   
 │                                   
 ├── reports/                     
 │
@@ -150,6 +150,7 @@ See [`DATA.md`](DATA.md) for the official dataset URL, dataset version, data spl
 4. Train a model: open the corresponding notebook (`train_cnn_scratch.ipynb`, `train_densenet121.ipynb`, `train_resnet50.ipynb`) on Colab/Kaggle — each notebook's first cell `git clone`s this repo and `%cd`s into it, so `src/` is importable right away — and run the training loop.
 5. Save checkpoints to `checkpoints/` and results/metrics to `results/metrics/`.
 6. To reproduce the XAI results: open `notebooks/xai_analysis.ipynb` on Colab, run the setup cell (clones the repo), then the checkpoint-download cell (pulls from the Google Drive link via `gdown`), then run the rest to apply LayerCAM + GradCAM++ + Occlusion and save the comparison grids to `results/figures/xai/`.
+   - **Selected checkpoint:** [Google Drive link](https://drive.google.com/file/d/1pke61YPrQXScSIqSPTMKHnL7r8Tpr9r9/view?usp=drive_link)
 
 ## 7. Demo for the presentation
 
